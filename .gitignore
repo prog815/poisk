@@ -47,7 +47,10 @@ ehthumbs.db
 Thumbs.db
 
 # Poisk-specific
-search.html  # Итоговый файл генерируется автоматически
-*.log
-test_output/
-temp/
+search.html          # Итоговый файл поиска
+test_search.html     # Тестовый файл поиска
+debug_output/*        # Папка для отладочных файлов
+test_data/*           # Тестовые данные для разработки
+*.test.ini           # Тестовые конфигурации
+test_data/*
+*.test.ini
