@@ -13,24 +13,18 @@ import configparser
 from datetime import datetime
 from pathlib import Path
 
+# ===== ФУНКЦИИ ИНДЕКСАЦИИ =====
+
 def should_index_file(filename, extensions):
     """
     Проверяет, нужно ли индексировать файл по расширению
-    
-    Args:
-        filename (str): Имя файла
-        extensions (list): Список расширений для индексации
-        
-    Returns:
-        bool: True если файл нужно индексировать
     """
     if not filename:
         return False
     
-    # Извлекаем расширение
     name_parts = filename.lower().split('.')
     if len(name_parts) < 2:
-        return False  # Нет расширения
+        return False
     
     ext = name_parts[-1]
     return ext in extensions
@@ -38,45 +32,29 @@ def should_index_file(filename, extensions):
 def scan_directory(directory_path, file_extensions, max_files, current_count):
     """
     Рекурсивно сканирует каталог и возвращает список файлов
-    
-    Args:
-        directory_path (str): Путь к каталогу для сканирования
-        file_extensions (list): Список расширений для индексации
-        max_files (int): Максимальное количество файлов для индексации
-        current_count (list): Счетчик файлов в формате [count] для модификации
-        
-    Returns:
-        list: Список относительных путей файлов
     """
     files_found = []
     
     try:
         for root, dirs, filenames in os.walk(directory_path):
-            # Пропускаем скрытые каталоги
             dirs[:] = [d for d in dirs if not d.startswith('.')]
             
             for filename in filenames:
-                # Проверяем ограничение по количеству файлов
                 if max_files > 0 and current_count[0] >= max_files:
-                    print(f"⚠️  Достигнут лимит в {max_files} файлов. Сканирование остановлено.")
+                    print(f"⚠️  Достигнут лимит в {max_files} файлов.")
                     return files_found
                 
-                # Проверяем расширение файла
                 if should_index_file(filename, file_extensions):
-                    # Получаем относительный путь от сканируемого каталога
                     full_path = os.path.join(root, filename)
                     try:
                         rel_path = os.path.relpath(full_path, directory_path)
-                        # Нормализуем разделители путей
                         rel_path = rel_path.replace('\\', '/')
                         files_found.append(rel_path)
                         current_count[0] += 1
                     except ValueError:
-                        # Если пути на разных дисках (Windows)
-                        print(f"⚠️  Не удалось получить относительный путь для: {full_path}")
+                        print(f"⚠️  Не удалось получить относительный путь: {full_path}")
                         continue
                 
-                # Выводим прогресс каждые 1000 файлов
                 if current_count[0] % 1000 == 0:
                     print(f"  Просканировано файлов: {current_count[0]}")
     
@@ -87,81 +65,19 @@ def scan_directory(directory_path, file_extensions, max_files, current_count):
     
     return files_found
 
-def normalize_path_separators(path):
-    """
-    Нормализует разделители путей для кроссплатформенности
-    
-    Args:
-        path (str): Путь с разделителями
-        
-    Returns:
-        str: Путь с универсальными разделителями (/)
-    """
-    if not path:
-        return path
-    
-    # Заменяем обратные слеши на прямые
-    normalized = path.replace('\\', '/')
-    
-    # Убираем двойные слеши
-    while '//' in normalized:
-        normalized = normalized.replace('//', '/')
-    
-    return normalized
-
-def split_path_and_filename(full_path):
-    """
-    Разделяет полный путь на путь и имя файла
-    
-    Args:
-        full_path (str): Полный путь к файлу
-        
-    Returns:
-        dict: {'path': путь, 'filename': имя файла}
-    """
-    if not full_path:
-        return {'path': '', 'filename': ''}
-    
-    # Нормализуем разделители
-    normalized_path = normalize_path_separators(full_path)
-    
-    # Находим последний разделитель
-    last_slash = normalized_path.rfind('/')
-    
-    if last_slash == -1:
-        # Файл в корне каталога
-        return {'path': '', 'filename': normalized_path}
-    
-    path_part = normalized_path[:last_slash]
-    filename_part = normalized_path[last_slash + 1:]
-    
-    return {'path': path_part, 'filename': filename_part}
-
 def build_file_index(scan_directories, file_extensions, max_files):
     """
     Строит индекс файлов для всех каталогов сканирования
-    
-    Args:
-        scan_directories (list): Список кортежей (путь, короткое_имя)
-        file_extensions (list): Список расширений для индексации
-        max_files (int): Максимальное количество файлов для индексации
-        
-    Returns:
-        tuple: (список каталогов, список файлов, статистика)
     """
     print("📁 Начинаем построение индекса файлов...")
     
-    # Структуры данных для JavaScript
-    scan_dirs_data = []  # [id, короткое_имя, полный_путь]
-    file_index_data = []  # [id_каталога, относительный_путь_файла]
+    scan_dirs_data = []
+    file_index_data = []
+    total_files_scanned = [0]
     
-    total_files_scanned = [0]  # Используем список для модификации в функции
-    
-    # Обрабатываем каждый каталог сканирования
     for dir_id, (dir_path, dir_name) in enumerate(scan_directories):
         print(f"\n📂 Сканируем каталог: {dir_name} ({dir_path})")
         
-        # Проверяем существование каталога
         if not os.path.exists(dir_path):
             print(f"❌ Каталог не существует: {dir_path}")
             continue
@@ -169,10 +85,8 @@ def build_file_index(scan_directories, file_extensions, max_files):
             print(f"❌ Указанный путь не является каталогом: {dir_path}")
             continue
         
-        # Добавляем каталог в данные
         scan_dirs_data.append([dir_id, dir_name, dir_path])
         
-        # Сканируем файлы в каталоге
         files_in_dir = scan_directory(
             dir_path, 
             file_extensions, 
@@ -180,18 +94,15 @@ def build_file_index(scan_directories, file_extensions, max_files):
             total_files_scanned
         )
         
-        # Добавляем файлы в индекс
         for file_path in files_in_dir:
             file_index_data.append([dir_id, file_path])
         
         print(f"  Найдено файлов в каталоге: {len(files_in_dir)}")
         
-        # Проверяем лимит по файлам
         if max_files > 0 and total_files_scanned[0] >= max_files:
             print(f"\n⚠️  Достигнут общий лимит в {max_files} файлов.")
             break
     
-    # Статистика
     stats = {
         'total_directories': len(scan_dirs_data),
         'total_files': len(file_index_data),
@@ -206,14 +117,163 @@ def build_file_index(scan_directories, file_extensions, max_files):
     
     return scan_dirs_data, file_index_data, stats
 
+# ===== ФУНКЦИИ ГЕНЕРАЦИИ HTML =====
+
+def read_file_content(file_path):
+    """
+    Читает содержимое файла
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        print(f"❌ Ошибка чтения файла {file_path}: {e}")
+        return ""
+
+def generate_menu_iframe(menu_file_path, output_path):
+    """
+    Генерирует HTML-код для iFrame с меню
+    """
+    if not menu_file_path or not os.path.exists(menu_file_path):
+        return ''
+    
+    try:
+        output_dir = os.path.dirname(output_path)
+        relative_path = os.path.relpath(menu_file_path, output_dir)
+        relative_path = relative_path.replace('\\', '/')
+        
+        return f'''
+        <div id="menu-container">
+            <iframe src="{relative_path}" 
+                    frameborder="0" 
+                    style="width:100%; height:auto; border:none;"
+                    title="Меню сетевого диска">
+            </iframe>
+        </div>
+        '''
+    except Exception as e:
+        print(f"❌ Ошибка при генерации меню: {e}")
+        return ''
+
+def generate_html_page(output_path, scan_dirs_data, file_index_data, stats, 
+                       config_data, template_path='template.html', 
+                       styles_path='styles.css', js_path='search.js'):
+    """
+    Генерирует HTML страницу поиска
+    """
+    print(f"\n📄 Генерация HTML страницы...")
+    
+    # Проверяем наличие файлов
+    if not os.path.exists(template_path):
+        print(f"❌ Шаблон не найден: {template_path}")
+        return False
+    if not os.path.exists(styles_path):
+        print(f"❌ Стили не найдены: {styles_path}")
+        return False
+    if not os.path.exists(js_path):
+        print(f"❌ JavaScript не найден: {js_path}")
+        return False
+    
+    try:
+        # Читаем файлы
+        print("   • Чтение шаблонов...")
+        html_template = read_file_content(template_path)
+        css_content = read_file_content(styles_path)
+        js_content = read_file_content(js_path)
+        
+        if not html_template:
+            print("❌ Шаблон HTML пустой")
+            return False
+        
+        # Подготавливаем данные для JavaScript
+        system_info = {
+            'version': '1.0.0',
+            'lastUpdated': datetime.now().strftime('%Y-%m-%d %H:%M'),
+            'totalFiles': len(file_index_data),
+            'directories': len(scan_dirs_data),
+            'extensions': config_data['file_extensions'],
+            'resultsPerPage': config_data['results_per_page']
+        }
+        
+        # Генерируем меню если нужно
+        menu_html = ''
+        if config_data.get('menu_file_path'):
+            menu_html = generate_menu_iframe(
+                config_data['menu_file_path'], 
+                output_path
+            )
+        
+        print("   • Замена плейсхолдеров...")
+        
+        # Заменяем плейсхолдеры в шаблоне
+        html_content = html_template
+        
+        # 1. Вставляем CSS
+        html_content = html_content.replace('/*STYLES_PLACEHOLDER*/', css_content)
+        
+        # 2. Вставляем JavaScript
+        html_content = html_content.replace('/*JS_PLACEHOLDER*/', js_content)
+        
+        # 3. Вставляем системную информацию
+        system_info_js = f'window.systemInfo = {json.dumps(system_info, ensure_ascii=False)};'
+        html_content = html_content.replace('/*SYSTEM_INFO_PLACEHOLDER*/', system_info_js)
+        
+        # 4. Вставляем данные каталогов
+        scan_dirs_js = f'window.scanDirs = {json.dumps(scan_dirs_data, ensure_ascii=False)};'
+        html_content = html_content.replace('/*SCAN_DIRS_PLACEHOLDER*/', scan_dirs_js)
+        
+        # 5. Вставляем индекс файлов
+        file_index_js = f'window.fileIndex = {json.dumps(file_index_data, ensure_ascii=False)};'
+        html_content = html_content.replace('/*FILE_INDEX_PLACEHOLDER*/', file_index_js)
+        
+        # 6. Вставляем меню
+        if '<!-- Меню будет вставлено здесь -->' in html_content:
+            html_content = html_content.replace(
+                '<!-- Меню будет вставлено здесь -->', 
+                menu_html
+            )
+        elif '<div id="menuContainer">' in html_content:
+            # Находим и заменяем содержимое menuContainer
+            import re
+            pattern = r'<div id="menuContainer">.*?</div>'
+            replacement = f'<div id="menuContainer">{menu_html}</div>'
+            html_content = re.sub(pattern, replacement, html_content, flags=re.DOTALL)
+        
+        # 7. Обновляем количество результатов на страницу в шаблоне
+        if 'resultsPerPage' in html_content:
+            html_content = html_content.replace(
+                '<span id="resultsPerPage">10</span>',
+                f'<span id="resultsPerPage">{config_data["results_per_page"]}</span>'
+            )
+        
+        # Создаем директорию для выходного файла если нужно
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Сохраняем HTML файл
+        print(f"   • Сохранение: {output_path}")
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        # Проверяем размер файла
+        file_size = os.path.getsize(output_path)
+        print(f"   • Размер файла: {file_size / 1024 / 1024:.2f} MB")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Ошибка генерации HTML: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+# ===== КОНФИГУРАЦИЯ =====
+
 def load_configuration():
     """
     Загружает и проверяет конфигурацию из config.ini
-    
-    Returns:
-        dict: Конфигурационные данные или None при ошибке
     """
-    # Проверяем существование конфигурационного файла
     if not os.path.exists('config.ini'):
         print("\n❌ Ошибка: Файл config.ini не найден.")
         print("\nИнструкция для администратора:")
@@ -230,17 +290,14 @@ def load_configuration():
         return None
     
     try:
-        # Загружаем конфигурацию
         config = configparser.ConfigParser()
         config.read('config.ini', encoding='utf-8')
         
-        # Проверяем обязательные секции
         if not config.has_section('PATHS'):
             raise ValueError("Отсутствует секция [PATHS] в config.ini")
         if not config.has_section('SETTINGS'):
             raise ValueError("Отсутствует секция [SETTINGS] в config.ini")
         
-        # Читаем настройки
         scan_dirs_str = config.get('PATHS', 'scan_directories', fallback='')
         output_path = config.get('PATHS', 'output_path', fallback='')
         menu_file_path = config.get('PATHS', 'menu_file_path', fallback='')
@@ -250,7 +307,6 @@ def load_configuration():
         extensions_str = config.get('SETTINGS', 'file_extensions', fallback='')
         config_version = config.get('SETTINGS', 'config_version', fallback='1.0')
         
-        # Парсим каталоги для сканирования
         scan_directories = []
         if scan_dirs_str:
             for item in scan_dirs_str.split(','):
@@ -266,7 +322,6 @@ def load_configuration():
                     name = os.path.basename(path.rstrip('/\\'))
                     scan_directories.append((path, name))
         
-        # Парсим расширения файлов
         file_extensions = [ext.strip().lower() for ext in extensions_str.split(',') if ext.strip()]
         
         config_data = {
@@ -292,39 +347,7 @@ def load_configuration():
         print("\nПроверьте правильность заполнения config.ini")
         return None
 
-def generate_html_page(template_path, output_path, scan_dirs_data, file_index_data, stats, menu_file_path=None):
-    """
-    Генерирует HTML страницу поиска
-    
-    Args:
-        template_path (str): Путь к шаблону HTML
-        output_path (str): Куда сохранить результат
-        scan_dirs_data (list): Данные каталогов
-        file_index_data (list): Индекс файлов
-        stats (dict): Статистика
-        menu_file_path (str): Путь к файлу меню (опционально)
-        
-    Returns:
-        bool: True если успешно
-    """
-    print(f"\n📄 Генерация HTML страницы...")
-    
-    try:
-        # TODO: Реализовать чтение шаблона и вставку данных
-        # Это будет на следующем этапе
-        print(f"   • Шаблон: {template_path}")
-        print(f"   • Выходной файл: {output_path}")
-        print(f"   • Данные для вставки: {len(file_index_data)} файлов")
-        
-        # Пока просто сообщаем, что этот этап еще не реализован
-        print("⚠️  Внимание: Генерация HTML еще не реализована")
-        print("   Этот этап будет выполнен позже")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Ошибка генерации HTML: {e}")
-        return False
+# ===== ОСНОВНАЯ ФУНКЦИЯ =====
 
 def main():
     """Основная функция скрипта"""
@@ -367,24 +390,41 @@ def main():
         print("   Проверьте расширения файлов в config.ini")
     
     # Генерируем HTML страницу
-    # TODO: Реализовать когда будут готовы template.html и другие файлы
-    # success = generate_html_page(
-    #     'template.html',
-    #     config_data['output_path'],
-    #     scan_dirs_data,
-    #     file_index_data,
-    #     stats,
-    #     config_data['menu_file_path']
-    # )
+    print(f"\n🎨 Подготовка к генерации HTML...")
+    print(f"   • Шаблон: template.html")
+    print(f"   • Стили: styles.css")
+    print(f"   • JavaScript: search.js")
+    print(f"   • Данные: {len(file_index_data)} файлов, {len(scan_dirs_data)} каталогов")
     
-    # Временно просто сообщаем об успехе индексации
-    print(f"\n✅ Индексация завершена успешно!")
-    print(f"   • Файлов в индексе: {stats['total_files']}")
-    print(f"   • Каталогов: {stats['total_directories']}")
-    print(f"\nℹ️  HTML страница будет сгенерирована на следующем этапе")
-    print(f"   Выходной файл: {config_data['output_path']}")
+    success = generate_html_page(
+        config_data['output_path'],
+        scan_dirs_data,
+        file_index_data,
+        stats,
+        config_data,
+        'template.html',
+        'styles.css',
+        'search.js'
+    )
     
-    return 0
+    if success:
+        print(f"\n✅ HTML страница успешно создана!")
+        print(f"   • Файл: {config_data['output_path']}")
+        print(f"   • Файлов в индексе: {stats['total_files']}")
+        print(f"   • Каталогов: {stats['total_directories']}")
+        
+        # Проверяем наличие файла
+        if os.path.exists(config_data['output_path']):
+            file_size = os.path.getsize(config_data['output_path'])
+            print(f"   • Размер файла: {file_size / 1024:.1f} KB")
+            print(f"\n🎉 Готово! Откройте файл в браузере для проверки.")
+        else:
+            print(f"⚠️  Внимание: Файл не найден по указанному пути")
+        
+        return 0
+    else:
+        print("\n❌ Ошибка при создании HTML страницы")
+        return 1
 
 if __name__ == "__main__":
     try:
@@ -394,4 +434,6 @@ if __name__ == "__main__":
         sys.exit(1)
     except Exception as e:
         print(f"\n❌ Неожиданная ошибка: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
