@@ -62,3 +62,10 @@ run_admin_test.bat
 admin_test_env/*
 admin_test_env/template.html
 admin_test_env/generate_search_page.py
+deploy_test_env.bat
+admin_test_env/generate_search_page.py
+
+admin_test_env/
+**/admin_test_env/
+admin_test_env/*
+/admin_test_env/
