@@ -375,32 +375,34 @@ function escapeJs(text) {
  */
 function displayDatabaseInfo() {
     const databaseStats = document.getElementById('databaseStats');
-    const supportedExtensions = document.getElementById('supportedExtensions');
     const systemVersion = document.getElementById('systemVersion');
+    const supportedExtensions = document.getElementById('supportedExtensions');
     
     if (!window.systemInfo) return;
     
-    // Отображаем версию системы
+    // Версия системы только в подвале
     if (systemVersion) {
         systemVersion.textContent = window.systemInfo.version || '1.0.0';
     }
     
-    // Отображаем статистику базы
+    // Информация о базе (4 пункта, без версии)
     if (databaseStats) {
         databaseStats.innerHTML = `
             <li>Дата последнего обновления: ${escapeHtml(window.systemInfo.lastUpdated)}</li>
             <li>Всего файлов в индексе: ${window.systemInfo.totalFiles.toLocaleString()}</li>
             <li>Каталогов сканирования: ${window.systemInfo.directories}</li>
             <li>Типы файлов: ${escapeHtml(window.systemInfo.extensions.join(', '))}</li>
-            <li>Версия системы: ${escapeHtml(window.systemInfo.version)}</li>
         `;
     }
     
-    // Отображаем поддерживаемые расширения в справке
-    if (supportedExtensions && window.systemInfo.extensions) {
-        supportedExtensions.innerHTML = window.systemInfo.extensions
-            .map(ext => `<span class="ext-badge">${escapeHtml(ext)}</span>`)
-            .join('');
+    // Скрываем блок с расширениями в справке если он есть
+    if (supportedExtensions) {
+        supportedExtensions.style.display = 'none';
+        const extensionsTitle = supportedExtensions.previousElementSibling;
+        if (extensionsTitle && extensionsTitle.tagName === 'H3' && 
+            extensionsTitle.textContent.includes('Поддерживаемые типы')) {
+            extensionsTitle.style.display = 'none';
+        }
     }
 }
 
