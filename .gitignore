@@ -1,5 +1,12 @@
 # Python
-__pycache__/
+__pycachько скрипт создания)
+poisk_distribution_*.zip
+versumbs.db
+
+# Poisk-specific
+search.html
+*.log
+test_oe__/
 *.py[cod]
 *$py.class
 *.so
@@ -44,10 +51,23 @@ venv.bak/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db
-
-# Poisk-specific
-search.html  # Итоговый файл генерируется автоматически
-*.log
-test_output/
+Thutput/
 temp/
+
+# Тестовое окружение
+admin_test_env/
+test_data/
+debug_output/
+*.test.*
+local_config.ini
+
+# Скрипты тестирования и деплоя
+deploy_test_env.bat
+deploy_test_env.sh
+run_admin_test.bat
+run_admin_test.sh
+create_test_data.bat
+create_test_data.py
+
+# Дистрибутив (не коммитить готовые архивы, толion.json
+dist_temp/

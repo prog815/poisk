@@ -1,0 +1,488 @@
+/* 
+Корпоративный поисковик для локальной сети
+Стили для поисковой страницы
+Версия: 1.0.0
+*/
+
+/* ===== ОСНОВНЫЕ СТИЛИ ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* ===== ШАПКА ===== */
+.header {
+    background: linear-gradient(135deg, #2c3e50, #4a6491);
+    color: white;
+    padding: 25px 30px;
+    border-bottom: 4px solid #3498db;
+}
+
+.title {
+    font-size: 2.2rem;
+    margin-bottom: 15px;
+    font-weight: 300;
+    text-align: center;
+}
+
+.directories-info {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+    font-size: 1.1rem;
+}
+
+.directories-info span {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 5px 12px;
+    border-radius: 4px;
+    margin-right: 10px;
+    display: inline-block;
+    margin-bottom: 5px;
+    font-size: 0.95rem;
+}
+
+/* ===== СЕКЦИЯ ПОИСКА ===== */
+.search-section {
+    padding: 25px 30px;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+}
+
+.search-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 300px;
+    padding: 14px 18px;
+    font-size: 1.1rem;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    transition: all 0.3s;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.search-button {
+    padding: 14px 28px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.search-button:hover {
+    background: #2980b9;
+}
+
+.search-button:active {
+    transform: translateY(1px);
+}
+
+.help-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.help-button {
+    padding: 14px 20px;
+    background: #7f8c8d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+    white-space: nowrap;
+}
+
+.help-button:hover {
+    background: #6c7b7d;
+}
+
+.help-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 20px;
+    width: 400px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    margin-top: 10px;
+}
+
+.help-content h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.help-content ul {
+    margin-left: 20px;
+    margin-bottom: 20px;
+}
+
+.help-content li {
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.search-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #666;
+    font-size: 0.95rem;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    margin-top: 10px;
+}
+
+.results-count {
+    background: #3498db;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+/* ===== РЕЗУЛЬТАТЫ ПОИСКА ===== */
+.results-section {
+    padding: 20px 30px;
+    min-height: 400px;
+}
+
+.results-container {
+    margin-bottom: 20px;
+}
+
+.result-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 12px;
+    transition: all 0.3s;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 15px;
+}
+
+.result-card:hover {
+    border-color: #3498db;
+    box-shadow: 0 3px 10px rgba(52, 152, 219, 0.15);
+    transform: translateY(-1px);
+}
+
+.directory-name {
+    background: #2c3e50;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.file-path {
+    flex: 1;
+    color: #666;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.95rem;
+    word-break: break-all;
+    min-width: 200px;
+}
+
+.file-path:hover {
+    color: #3498db;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.file-name {
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 1.1rem;
+    word-break: break-word;
+    min-width: 200px;
+}
+
+.file-name:hover {
+    color: #e74c3c;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* ===== КНОПКА "ПОКАЗАТЬ ЕЩЕ" ===== */
+.show-more-button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 2px dashed #bdc3c7;
+    border-radius: 8px;
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin: 20px 0;
+}
+
+.show-more-button:hover {
+    background: #ecf0f1;
+    border-color: #3498db;
+    color: #3498db;
+}
+
+/* ===== СОСТОЯНИЯ ===== */
+.empty-state, .no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: #7f8c8d;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.empty-state h3, .no-results h3 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+.empty-state p, .no-results p {
+    font-size: 1.1rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* ===== ИНФОРМАЦИЯ О БАЗЕ ===== */
+.database-info {
+    background: #f8f9fa;
+    border-top: 1px solid #eee;
+    padding: 25px 30px;
+    margin-top: 20px;
+}
+
+.database-info h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.database-info ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+}
+
+.database-info li {
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+    font-size: 0.95rem;
+    color: #555;
+}
+
+/* ===== МЕНЮ ===== */
+#menu-container {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+
+#menu-container iframe {
+    width: 100%;
+    height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+/* ===== ПОДВАЛ ===== */
+.footer {
+    background: #2c3e50;
+    color: #bdc3c7;
+    padding: 20px 30px;
+    text-align: center;
+    border-top: 4px solid #3498db;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.footer-text {
+    font-size: 0.95rem;
+}
+
+.footer-text a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.footer-text a:hover {
+    text-decoration: underline;
+}
+
+#systemVersion {
+    color: #3498db;
+    font-weight: 600;
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .title {
+        font-size: 1.8rem;
+    }
+    
+    .search-container {
+        flex-direction: column;
+    }
+    
+    .search-input {
+        min-width: 100%;
+    }
+    
+    .search-button, .help-button {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .help-content {
+        position: static;
+        width: 100%;
+        margin-top: 15px;
+    }
+    
+    .result-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .file-path, .file-name {
+        min-width: 100%;
+    }
+    
+    .database-info ul {
+        grid-template-columns: 1fr;
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* ===== АНИМАЦИИ ===== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.result-card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* ===== ВСПОМОГАТЕЛЬНЫЕ КЛАССЫ ===== */
+.hidden {
+    display: none !important;
+}
+
+.visible {
+    display: block !important;
+}
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+
+/* Индикатор новой вкладки для ссылок */
+.file-path::after, .file-name::after {
+    content: " ↗";
+    font-size: 0.9em;
+    opacity: 0.5;
+    display: inline-block;
+    margin-left: 2px;
+}
+
+.file-path:hover::after, .file-name:hover::after {
+    opacity: 0.8;
+}
+
+/* ===== ПОДСВЕТКА РЕЗУЛЬТАТОВ ПОИСКА ===== */
+.search-highlight {
+    background-color: #FFEB3B;
+    color: #000;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: bold;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.empty-path {
+    color: #95a5a6;
+    font-style: italic;
+}
+
+/* Улучшаем видимость подсветки */
+.file-path .search-highlight,
+.file-name .search-highlight {
+    background-color: #FFF176;
+}
