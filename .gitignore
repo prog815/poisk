@@ -54,3 +54,11 @@ test_data/*           # Тестовые данные для разработк�
 *.test.ini           # Тестовые конфигурации
 test_data/*
 *.test.ini
+
+# Тестовые скрипты
+create_test_data.bat
+create_test_data.py
+run_admin_test.bat
+admin_test_env/*
+admin_test_env/template.html
+admin_test_env/generate_search_page.py

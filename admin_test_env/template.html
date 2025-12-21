@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск файлов в локальной сети</title>
+    <style>
+        /* CSS стили будут вставлены сюда */
+        /*STYLES_PLACEHOLDER*/
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Шапка с заголовком и информацией -->
+        <header class="header">
+            <h1 class="title">🔍 Поиск файлов на диске</h1>
+            <div class="directories-info" id="directoriesInfo">
+                <!-- Каталоги будут вставлены здесь -->
+            </div>
+        </header>
+
+        <!-- Поисковая форма -->
+        <div class="search-section">
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="search-input" 
+                    placeholder="Введите название файла или путь..." 
+                    autocomplete="off"
+                >
+                <button id="searchButton" class="search-button">Поиск</button>
+                <div class="help-dropdown">
+                    <button id="helpToggle" class="help-button">▼ Справка</button>
+                    <div id="helpContent" class="help-content">
+                        <h3>Как пользоваться поиском</h3>
+                        <ul>
+                            <li>Вводите любые слова из названия файла или пути</li>
+                            <li>Используйте пробелы для разделения слов</li>
+                            <li>Система ищет файлы, содержащие ВСЕ указанные слова</li>
+                            <li>Поиск не чувствителен к регистру и специальным символам</li>
+                            <li>Кликните на путь к файлу, чтобы открыть папку</li>
+                            <li>Кликните на имя файла, чтобы открыть файл</li>
+                        </ul>
+                        <h3>Поддерживаемые типы файлов</h3>
+                        <div id="supportedExtensions">
+                            <!-- Расширения будут вставлены здесь -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="search-info">
+                <span id="searchStatus">Готов к поиску</span>
+                <span id="resultsCount" class="results-count"></span>
+            </div>
+        </div>
+
+        <!-- Результаты поиска -->
+        <div class="results-section">
+            <div id="resultsContainer" class="results-container">
+                <!-- Результаты будут вставлены здесь -->
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <h3>Начните поиск</h3>
+                    <p>Введите запрос в строку поиска выше</p>
+                </div>
+            </div>
+            
+            <!-- Кнопка "Показать еще" -->
+            <button id="showMoreButton" class="show-more-button" style="display: none;">
+                Показать следующие <span id="resultsPerPage">10</span> файлов
+            </button>
+            
+            <!-- Сообщение о пустом результате -->
+            <div id="noResults" class="no-results" style="display: none;">
+                <div class="empty-icon">😕</div>
+                <h3>Ничего не найдено</h3>
+                <p>Попробуйте изменить запрос или использовать другие слова</p>
+            </div>
+        </div>
+
+        <!-- Информация о базе данных -->
+        <div class="database-info">
+            <h3>📊 Информация о базе поиска</h3>
+            <ul id="databaseStats">
+                <!-- Статистика будет вставлена здесь -->
+            </ul>
+        </div>
+
+        <!-- Контейнер для меню (если есть) -->
+        <div id="menuContainer">
+            <!-- Меню будет вставлено здесь -->
+        </div>
+
+        <!-- Подвал -->
+        <footer class="footer">
+            <div class="footer-content">
+                <span class="footer-text">Корпоративный поисковик для локальной сети</span>
+                <span class="footer-text">Версия: <span id="systemVersion">1.0.0</span></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript код будет вставлен сюда -->
+    <script>
+        /*JS_PLACEHOLDER*/
+    </script>
+    
+    <!-- Данные для поиска будут вставлены сюда -->
+    <script>
+        /*SYSTEM_INFO_PLACEHOLDER*/
+        /*SCAN_DIRS_PLACEHOLDER*/
+        /*FILE_INDEX_PLACEHOLDER*/
+    </script>
+</body>
+</html>
