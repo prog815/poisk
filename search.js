@@ -99,28 +99,78 @@ function splitPathAndFilename(fullPath) {
 }
 
 /**
+ * Подсвечивает найденные слова в тексте
+ * @param {string} text - Исходный текст
+ * @param {Array} searchWords - Массив слов для подсветки
+ * @returns {string} Текст с HTML разметкой для подсветки
+ */
+function highlightSearchWords(text, searchWords) {
+    if (!text || !searchWords || searchWords.length === 0) {
+        return escapeHtml(text);
+    }
+    
+    let highlightedText = escapeHtml(text);
+    
+    // Для каждого слова поиска
+    searchWords.forEach(word => {
+        if (word.length < 2) return; // Не подсвечиваем слишком короткие слова
+        
+        const regex = new RegExp(`(${escapeRegExp(word)})`, 'gi');
+        highlightedText = highlightedText.replace(
+            regex, 
+            '<mark class="search-highlight">$1</mark>'
+        );
+    });
+    
+    return highlightedText;
+}
+
+/**
+ * Экранирует специальные символы для регулярных выражений
+ */
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Создает HTML для отображения файла
  * @param {Object} fileData - Данные файла
+ * @param {Array} searchWords - Массив слов поискового запроса
  * @returns {string} HTML строка
  */
-function createFileResultHTML(fileData) {
+function createFileResultHTML(fileData, searchWords = []) {
     const pathParts = splitPathAndFilename(fileData.filePath);
-    
-    // Проблема: fileData.dirName - это короткое имя (ТестАрхив), 
-    // а нам нужно имя папки (Архив)
-    
-    // Получаем реальное имя папки из полного пути
     const dirInfo = window.scanDirs[fileData.dirId];
-    const dirPath = dirInfo[2]; // Полный путь к каталогу
     
-    // Извлекаем последнюю часть пути (имя папки)
-    let folderName = dirPath.split(/[\\/]/).filter(Boolean).pop();
+    if (!dirInfo) {
+        console.error('Не найдена информация о каталоге:', fileData.dirId);
+        return `<div class="result-card">Ошибка: каталог не найден</div>`;
+    }
+    
+    // Получаем путь к каталогу
+    const dirPath = dirInfo[2]; // Вот здесь исправление!
+    
+    // Извлекаем имя папки из полного пути
+    let folderName;
+    if (dirPath.includes('\\')) {
+        folderName = dirPath.split('\\').filter(Boolean).pop();
+    } else {
+        folderName = dirPath.split('/').filter(Boolean).pop();
+    }
+    
+    if (!folderName) {
+        folderName = fileData.dirName;
+    }
     
     // Создаем относительные пути
     const relativeFilePath = `${folderName}/${fileData.filePath}`;
     const relativeFolderPath = pathParts.path ? 
         `${folderName}/${pathParts.path}` : 
         `${folderName}/`;
+    
+    // Подсвечиваем слова
+    const highlightedPath = highlightSearchWords(pathParts.path, searchWords);
+    const highlightedFilename = highlightSearchWords(pathParts.filename, searchWords);
     
     return `
         <div class="result-card">
@@ -130,14 +180,14 @@ function createFileResultHTML(fileData) {
                title="Открыть папку в новой вкладке"
                target="_blank"
                rel="noopener noreferrer">
-                ${escapeHtml(pathParts.path || '(корень каталога)')}${pathParts.path ? '/' : ''}
+                ${highlightedPath || '<span class="empty-path">(корень каталога)</span>'}${pathParts.path ? '/' : ''}
             </a>
             <a href="${escapeHtml(relativeFilePath)}" 
                class="file-name" 
                title="Открыть файл в новой вкладке"
                target="_blank"
                rel="noopener noreferrer">
-                ${escapeHtml(pathParts.filename)}
+                ${highlightedFilename}
             </a>
         </div>
     `;
@@ -159,6 +209,9 @@ function displaySearchResults(results, query) {
     currentSearchResults = results;
     currentDisplayIndex = 0;
     currentSearchQuery = query.display;
+    
+    // Получаем слова для подсветки
+    const searchWords = query.search ? query.search.split(/\s+/) : [];
     
     // Обновляем информацию о поиске
     if (query.search) {
@@ -183,7 +236,16 @@ function displaySearchResults(results, query) {
         
         // Показываем первую страницу результатов
         if (results.length > 0) {
-            showMoreResults();
+            // Показываем первые resultsPerPage результатов
+            const endIndex = Math.min(resultsPerPage, results.length);
+            
+            for (let i = 0; i < endIndex; i++) {
+                const fileData = results[i];
+                const fileHTML = createFileResultHTML(fileData, searchWords);
+                resultsContainer.insertAdjacentHTML('beforeend', fileHTML);
+            }
+            
+            currentDisplayIndex = endIndex;
             
             // Показываем кнопку "Показать еще" если есть еще результаты
             if (results.length > resultsPerPage) {
@@ -212,6 +274,10 @@ function showMoreResults() {
     const resultsContainer = document.getElementById('resultsContainer');
     const showMoreButton = document.getElementById('showMoreButton');
     
+    // Получаем слова для подсветки из текущего запроса
+    const searchWords = currentSearchQuery ? 
+        prepareSearchQuery(currentSearchQuery).search.split(/\s+/) : [];
+    
     // Определяем сколько результатов показать
     const endIndex = Math.min(
         currentDisplayIndex + resultsPerPage,
@@ -221,7 +287,7 @@ function showMoreResults() {
     // Добавляем следующие результаты
     for (let i = currentDisplayIndex; i < endIndex; i++) {
         const fileData = currentSearchResults[i];
-        const fileHTML = createFileResultHTML(fileData);
+        const fileHTML = createFileResultHTML(fileData, searchWords);
         resultsContainer.insertAdjacentHTML('beforeend', fileHTML);
     }
     
