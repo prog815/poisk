@@ -35,14 +35,14 @@ poisk/
 ├── 🎨 styles.css                  # Стили оформления
 ├── 📜 search.js                   # Логика поиска на JavaScript
 ├── 🔧 create_distribution.py      # Утилита создания дистрибутива
-├── ⚙️ config.ini                 # Шаблон конфигурации
-└── 📦 poisk_distribution_v1.0.zip # Готовый дистрибутив
+├── ⚙️ config.ini                  # Шаблон конфигурации
+└── 📦 poisk_distribution.zip      # Готовый дистрибутив
 ```
 
 ## 🚀 Быстрый старт
 
 ### 1. Скачивание
-Последнюю версию можно скачать из раздела [Releases](https://github.com/prog815/poisk/releases) или взять готовый дистрибутив `poisk_distribution_v1.0.zip`.
+Последнюю версию можно скачать из раздела [Releases](https://github.com/prog815/poisk/releases).
 
 ### 2. Установка администратором
 ```bash

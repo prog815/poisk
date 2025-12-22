@@ -1,6 +1,5 @@
 """
 Утилита создания дистрибутива для системы Poisk
-Версия: 1.0.0
 Репозиторий: https://github.com/prog815/poisk
 
 Создает архив с файлами .txt для публикации на GitHub.
@@ -107,7 +106,7 @@ def create_distribution():
     # Создаем архив
     print(f"\n🗜️  Создание архива...")
     version = get_version_from_files()
-    archive_name = f"poisk_distribution_v{version}.zip"
+    archive_name = f"poisk_distribution.zip"
     
     try:
         with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
