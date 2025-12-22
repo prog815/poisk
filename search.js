@@ -28,8 +28,8 @@ function prepareSearchQuery(userInput) {
         .trim();
     
     return {
-        display: displayQuery,
-        search: searchQuery
+        display: displayQuery,  // Оригинальный запрос
+        search: searchQuery     // Запрос в нижнем регистре для поиска
     };
 }
 
@@ -51,12 +51,15 @@ function searchInIndex(queryObj) {
     for (let i = 0; i < window.fileIndex.length; i++) {
         const file = window.fileIndex[i];
         const dirId = file[0];
-        const filePath = file[1].toLowerCase(); // Путь к файлу в нижнем регистре
+        const filePath = file[1]; // ОРИГИНАЛЬНЫЙ путь
+        
+        // Для поиска приводим к нижнему регистру
+        const filePathLower = filePath.toLowerCase();
         
         // Проверяем, содержит ли путь ВСЕ слова запроса
         let matchesAll = true;
         for (let j = 0; j < words.length; j++) {
-            if (filePath.indexOf(words[j]) === -1) {
+            if (filePathLower.indexOf(words[j]) === -1) {
                 matchesAll = false;
                 break;
             }
@@ -69,8 +72,8 @@ function searchInIndex(queryObj) {
                 dirId: dirId,
                 dirName: dirInfo[1],
                 dirPath: dirInfo[2],
-                filePath: filePath,
-                originalPath: file[1] // Оригинальный путь (без изменений)
+                filePath: filePath, // Оригинальный путь
+                originalPath: file[1]
             });
         }
     }
@@ -113,8 +116,9 @@ function highlightSearchWords(text, searchWords) {
     
     // Для каждого слова поиска
     searchWords.forEach(word => {
-        if (word.length < 2) return; // Не подсвечиваем слишком короткие слова
+        if (word.length < 2) return;
         
+        // Создаем регулярное выражение без учета регистра
         const regex = new RegExp(`(${escapeRegExp(word)})`, 'gi');
         highlightedText = highlightedText.replace(
             regex, 
@@ -139,42 +143,37 @@ function escapeRegExp(string) {
  * @returns {string} HTML строка
  */
 function createFileResultHTML(fileData, searchWords = []) {
-    const pathParts = splitPathAndFilename(fileData.filePath);
+    const pathParts = splitPathAndFilename(fileData.filePath); // Оригинальный путь
     const dirInfo = window.scanDirs[fileData.dirId];
     
-    if (!dirInfo) {
-        console.error('Не найдена информация о каталоге:', fileData.dirId);
-        return `<div class="result-card">Ошибка: каталог не найден</div>`;
-    }
+    if (!dirInfo) return `<div class="result-card">Ошибка каталога</div>`;
     
-    // Получаем путь к каталогу
-    const dirPath = dirInfo[2]; // Вот здесь исправление!
+    const dirName = dirInfo[1]; // Короткое имя
+    const dirPath = dirInfo[2]; // Полный путь
     
-    // Извлекаем имя папки из полного пути
-    let folderName;
+    // Получаем базовое имя каталога (сохраняем оригинальный регистр)
+    let baseFolderName;
     if (dirPath.includes('\\')) {
-        folderName = dirPath.split('\\').filter(Boolean).pop();
+        const parts = dirPath.split('\\').filter(Boolean);
+        baseFolderName = parts[parts.length - 1]; // Последняя часть с оригинальным регистром
     } else {
-        folderName = dirPath.split('/').filter(Boolean).pop();
+        const parts = dirPath.split('/').filter(Boolean);
+        baseFolderName = parts[parts.length - 1];
     }
     
-    if (!folderName) {
-        folderName = fileData.dirName;
-    }
-    
-    // Создаем относительные пути
-    const relativeFilePath = `${folderName}/${fileData.filePath}`;
+    // Формируем пути с сохранением оригинального регистра
+    const relativeFilePath = baseFolderName + '/' + fileData.filePath;
     const relativeFolderPath = pathParts.path ? 
-        `${folderName}/${pathParts.path}` : 
-        `${folderName}/`;
+        baseFolderName + '/' + pathParts.path : 
+        baseFolderName;
     
-    // Подсвечиваем слова
+    // Подсвечиваем слова (сохраняем оригинальный регистр текста)
     const highlightedPath = highlightSearchWords(pathParts.path, searchWords);
     const highlightedFilename = highlightSearchWords(pathParts.filename, searchWords);
     
     return `
         <div class="result-card">
-            <span class="directory-name">${escapeHtml(fileData.dirName)}</span>
+            <span class="directory-name">${escapeHtml(dirName)}</span>
             <a href="${escapeHtml(relativeFolderPath)}" 
                class="file-path" 
                title="Открыть папку в новой вкладке"
@@ -381,30 +380,20 @@ function openFile(dirId, relativePath) {
  * @returns {string} Нормализованный путь
  */
 function normalizePathForFileURL(path) {
+    // Сохраняем оригинальный путь
+    let normalized = path;
+    
     // Заменяем обратные слеши на прямые
-    let normalized = path.replace(/\\/g, '/');
+    normalized = normalized.replace(/\\/g, '/');
     
     // Убираем лишние слеши
     normalized = normalized.replace(/\/+/g, '/');
     
-    // Для сетевых путей Windows (\\server\share)
-    if (normalized.startsWith('//')) {
-        // file:// URL для сетевых путей имеет особый формат
-        return normalized;
-    }
-    
-    // Для локальных путей Windows (C:\folder)
-    if (normalized.match(/^[a-zA-Z]:/)) {
-        // file:///C:/folder
-        return normalized;
-    }
-    
-    // Для относительных путей
-    if (!normalized.startsWith('/')) {
-        // Делаем абсолютным (относительно текущей страницы)
-        const currentDir = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-        normalized = currentDir + '/' + normalized;
-    }
+    // Кодируем спецсимволы для URL (пробелы, скобки и т.д.)
+    // Разбиваем на части и кодируем каждую часть
+    const parts = normalized.split('/');
+    const encodedParts = parts.map(part => encodeURIComponent(part));
+    normalized = encodedParts.join('/');
     
     return normalized;
 }

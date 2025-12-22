@@ -18,20 +18,22 @@ from pathlib import Path
 def should_index_file(filename, extensions):
     """
     Проверяет, нужно ли индексировать файл по расширению
+    Не меняет регистр имени файла
     """
     if not filename:
         return False
     
-    name_parts = filename.lower().split('.')
+    name_parts = filename.split('.')  # УБИРАЕМ .lower() здесь!
     if len(name_parts) < 2:
         return False
     
-    ext = name_parts[-1]
+    ext = name_parts[-1].lower()  # Проверяем расширение в нижнем регистре
     return ext in extensions
 
 def scan_directory(directory_path, file_extensions, max_files, current_count):
     """
     Рекурсивно сканирует каталог и возвращает список файлов
+    Возвращает оригинальные пути ОТНОСИТЕЛЬНО directory_path
     """
     files_found = []
     
@@ -47,12 +49,17 @@ def scan_directory(directory_path, file_extensions, max_files, current_count):
                 if should_index_file(filename, file_extensions):
                     full_path = os.path.join(root, filename)
                     try:
-                        rel_path = os.path.relpath(full_path, directory_path)
-                        rel_path = rel_path.replace('\\', '/')
-                        files_found.append(rel_path)
+                        # Сохраняем ОРИГИНАЛЬНЫЙ путь (регистр, пробелы и т.д.)
+                        rel_to_dir = os.path.relpath(full_path, directory_path)
+                        rel_to_dir = rel_to_dir.replace('\\', '/')  # только слеши меняем
+                        files_found.append(rel_to_dir)  # оригинальный регистр
                         current_count[0] += 1
-                    except ValueError:
+                    except ValueError as e:
                         print(f"⚠️  Не удалось получить относительный путь: {full_path}")
+                        print(f"     Ошибка: {e}")
+                        continue
+                    except Exception as e:
+                        print(f"⚠️  Ошибка при обработке пути {full_path}: {e}")
                         continue
                 
                 if current_count[0] % 1000 == 0:
@@ -68,6 +75,7 @@ def scan_directory(directory_path, file_extensions, max_files, current_count):
 def build_file_index(scan_directories, file_extensions, max_files):
     """
     Строит индекс файлов для всех каталогов сканирования
+    Возвращает пути ОТНОСИТЕЛЬНО каждого каталога сканирования
     """
     print("📁 Начинаем построение индекса файлов...")
     
@@ -91,7 +99,7 @@ def build_file_index(scan_directories, file_extensions, max_files):
             dir_path, 
             file_extensions, 
             max_files, 
-            total_files_scanned
+            total_files_scanned  # <-- убрали output_dir
         )
         
         for file_path in files_in_dir:
@@ -162,6 +170,18 @@ def generate_html_page(output_path, scan_dirs_data, file_index_data, stats,
     Генерирует HTML страницу поиска
     """
     print(f"\n📄 Генерация HTML страницы...")
+    
+    # ПРОВЕРКА ПУТЕЙ (добавьте этот блок)
+    print("\n🔍 Проверка путей в индексе:")
+    print(f"   Каталог вывода: {os.path.dirname(output_path)}")
+    
+    if file_index_data and len(file_index_data) > 0:
+        print(f"   Примеры путей:")
+        for i in range(min(3, len(file_index_data))):
+            file = file_index_data[i]
+            print(f"     - {file[1]}")
+        if len(file_index_data) > 3:
+            print(f"     ... и еще {len(file_index_data) - 3} файлов")
     
     # Проверяем наличие файлов
     if not os.path.exists(template_path):
@@ -309,18 +329,62 @@ def load_configuration():
         
         scan_directories = []
         if scan_dirs_str:
-            for item in scan_dirs_str.split(','):
-                item = item.strip()
+            # Разделяем по запятым
+            items = []
+            current_item = ""
+            in_item = False
+            
+            # Ручной парсинг для правильной обработки Windows путей
+            for char in scan_dirs_str:
+                if char == ',' and not in_item:
+                    if current_item:
+                        items.append(current_item.strip())
+                        current_item = ""
+                else:
+                    current_item += char
+                    if char == '\\':
+                        in_item = True
+                    elif char == ':' and in_item:
+                        in_item = False
+            
+            if current_item:
+                items.append(current_item.strip())
+            
+            # Обрабатываем каждый элемент
+            for item in items:
                 if not item:
                     continue
-                    
-                if ':' in item:
-                    path, name = item.split(':', 1)
-                    scan_directories.append((path.strip(), name.strip()))
+                
+                # Определяем позицию разделителя "путь:имя"
+                # Для Windows: C:\folder:Имя → двоеточие после \folder
+                # Для Linux: /mnt/folder:Имя → двоеточие после /folder
+                # Для сетевых путей: \\server\share:Имя → двоеточие после \share
+                
+                colon_pos = -1
+                
+                # Ищем двоеточие, которое НЕ является частью диска Windows (не сразу после буквы)
+                for i in range(len(item)):
+                    if item[i] == ':':
+                        # Проверяем, не является ли это диском Windows
+                        if i == 1 and len(item) > 1 and item[0].isalpha():
+                            # Это диск Windows (C:, D: и т.д.) - пропускаем
+                            continue
+                        # Проверяем, что перед двоеточием не сетевая доля (\\server\share:)
+                        if i > 1 and item[i-1] in '\\/' and item[i-2] in '\\/':
+                            # Это сетевая доля - пропускаем
+                            continue
+                        colon_pos = i
+                        break
+                
+                if colon_pos > 0:
+                    path = item[:colon_pos].strip()
+                    name = item[colon_pos + 1:].strip()
                 else:
+                    # Нет двоеточия для имени
                     path = item.strip()
                     name = os.path.basename(path.rstrip('/\\'))
-                    scan_directories.append((path, name))
+                
+                scan_directories.append((path, name))
         
         file_extensions = [ext.strip().lower() for ext in extensions_str.split(',') if ext.strip()]
         
@@ -336,6 +400,8 @@ def load_configuration():
         
         print(f"\n📋 Загруженная конфигурация:")
         print(f"   • Каталогов для сканирования: {len(scan_directories)}")
+        for path, name in scan_directories:
+            print(f"     - {name}: {path}")
         print(f"   • Выходной файл: {output_path}")
         print(f"   • Макс. файлов: {max_files}")
         print(f"   • Расширения: {', '.join(file_extensions[:5])}{'...' if len(file_extensions) > 5 else ''}")
@@ -345,6 +411,8 @@ def load_configuration():
     except Exception as e:
         print(f"\n❌ Ошибка загрузки конфигурации: {e}")
         print("\nПроверьте правильность заполнения config.ini")
+        import traceback
+        traceback.print_exc()
         return None
 
 # ===== ОСНОВНАЯ ФУНКЦИЯ =====
@@ -372,7 +440,7 @@ def main():
         print(f"\n❌ Ошибка: {e}")
         return 1
     
-    # Строим индекс файлов
+    # Строим индекс файлов (пути относительно каталогов сканирования)
     scan_dirs_data, file_index_data, stats = build_file_index(
         config_data['scan_directories'], 
         config_data['file_extensions'], 
@@ -388,6 +456,19 @@ def main():
     if not file_index_data:
         print("\n⚠️  Предупреждение: Не найдено файлов для индексации")
         print("   Проверьте расширения файлов в config.ini")
+    
+    # ПРОВЕРКА ПУТЕЙ (добавьте этот блок для отладки)
+    print(f"\n🔍 Проверка структуры данных:")
+    print(f"   • Каталогов: {len(scan_dirs_data)}")
+    print(f"   • Файлов: {len(file_index_data)}")
+    if file_index_data and len(file_index_data) > 0:
+        print(f"   • Примеры путей в fileIndex:")
+        for i in range(min(3, len(file_index_data))):
+            file = file_index_data[i]
+            dir_id, file_path = file
+            dir_name = scan_dirs_data[dir_id][1]
+            print(f"     - [{dir_id}] {dir_name}: {file_path}")
+    # Конец блока проверки
     
     # Генерируем HTML страницу
     print(f"\n🎨 Подготовка к генерации HTML...")
@@ -413,7 +494,7 @@ def main():
         print(f"   • Файлов в индексе: {stats['total_files']}")
         print(f"   • Каталогов: {stats['total_directories']}")
         
-        # Проверяем наличие файла
+        # Проверяем размер файла
         if os.path.exists(config_data['output_path']):
             file_size = os.path.getsize(config_data['output_path'])
             print(f"   • Размер файла: {file_size / 1024:.1f} KB")
