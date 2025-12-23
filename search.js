@@ -1,7 +1,7 @@
 /**
  * Корпоративный поисковик для локальной сети
  * JavaScript логика поиска
- * Версия: 1.0.0
+ * Версия: 1.0.2
  */
 
 // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
@@ -87,17 +87,20 @@ function searchInIndex(queryObj) {
  * @returns {Object} Объект с путем и именем файла
  */
 function splitPathAndFilename(fullPath) {
+    // Нормализуем разделители: все слеши делаем прямыми
+    const normalized = fullPath.replace(/\\/g, '/');
+
     // Если файл в корне каталога сканирования (нет слешей)
-    if (fullPath.indexOf('\\') === -1 && fullPath.indexOf('/') === -1) {
+    if (normalized.indexOf('/') === -1) {
         return {path: '', filename: fullPath};
     }
-    
-    // Находим последний разделитель
-    const lastSlash = Math.max(fullPath.lastIndexOf('\\'), fullPath.lastIndexOf('/'));
-    
+
+    // Находим последний слеш
+    const lastSlash = normalized.lastIndexOf('/');
+
     return {
-        path: fullPath.substring(0, lastSlash),
-        filename: fullPath.substring(lastSlash + 1)
+        path: normalized.substring(0, lastSlash),
+        filename: normalized.substring(lastSlash + 1)
     };
 }
 
@@ -143,46 +146,34 @@ function escapeRegExp(string) {
  * @returns {string} HTML строка
  */
 function createFileResultHTML(fileData, searchWords = []) {
-    const pathParts = splitPathAndFilename(fileData.filePath); // Оригинальный путь
+    const pathParts = splitPathAndFilename(fileData.filePath);
     const dirInfo = window.scanDirs[fileData.dirId];
-    
+
     if (!dirInfo) return `<div class="result-card">Ошибка каталога</div>`;
-    
-    const dirName = dirInfo[1]; // Короткое имя
-    const dirPath = dirInfo[2]; // Полный путь
-    
-    // Получаем базовое имя каталога (сохраняем оригинальный регистр)
-    let baseFolderName;
-    if (dirPath.includes('\\')) {
-        const parts = dirPath.split('\\').filter(Boolean);
-        baseFolderName = parts[parts.length - 1]; // Последняя часть с оригинальным регистром
-    } else {
-        const parts = dirPath.split('/').filter(Boolean);
-        baseFolderName = parts[parts.length - 1];
-    }
-    
-    // Формируем пути с сохранением оригинального регистра
-    const relativeFilePath = baseFolderName + '/' + fileData.filePath;
-    const relativeFolderPath = pathParts.path ? 
-        baseFolderName + '/' + pathParts.path : 
-        baseFolderName;
-    
-    // Подсвечиваем слова (сохраняем оригинальный регистр текста)
+
+    const dirName = dirInfo[1];
+
+    // ВАЖНО: fileData.filePath уже содержит путь ОТНОСИТЕЛЬНО каталога сканирования
+    // Не нужно добавлять baseFolderName!
+    const relativeFilePath = fileData.filePath;
+    const relativeFolderPath = pathParts.path || '';
+
+    // Подсвечиваем слова
     const highlightedPath = highlightSearchWords(pathParts.path, searchWords);
     const highlightedFilename = highlightSearchWords(pathParts.filename, searchWords);
-    
+
     return `
         <div class="result-card">
             <span class="directory-name">${escapeHtml(dirName)}</span>
-            <a href="${escapeHtml(relativeFolderPath)}" 
-               class="file-path" 
+            <a href="${escapeHtml(relativeFolderPath)}"
+               class="file-path"
                title="Открыть папку в новой вкладке"
                target="_blank"
                rel="noopener noreferrer">
                 ${highlightedPath || '<span class="empty-path">(корень каталога)</span>'}${pathParts.path ? '/' : ''}
             </a>
-            <a href="${escapeHtml(relativeFilePath)}" 
-               class="file-name" 
+            <a href="${escapeHtml(relativeFilePath)}"
+               class="file-name"
                title="Открыть файл в новой вкладке"
                target="_blank"
                rel="noopener noreferrer">
@@ -382,19 +373,23 @@ function openFile(dirId, relativePath) {
 function normalizePathForFileURL(path) {
     // Сохраняем оригинальный путь
     let normalized = path;
-    
+
     // Заменяем обратные слеши на прямые
     normalized = normalized.replace(/\\/g, '/');
-    
+
     // Убираем лишние слеши
     normalized = normalized.replace(/\/+/g, '/');
-    
-    // Кодируем спецсимволы для URL (пробелы, скобки и т.д.)
-    // Разбиваем на части и кодируем каждую часть
+
+    // Убираем ведущий слеш для абсолютных Linux путей
+    if (normalized.startsWith('/')) {
+        normalized = normalized.substring(1);
+    }
+
+    // Кодируем спецсимволы для URL
     const parts = normalized.split('/');
     const encodedParts = parts.map(part => encodeURIComponent(part));
     normalized = encodedParts.join('/');
-    
+
     return normalized;
 }
 
