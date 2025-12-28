@@ -1,7 +1,7 @@
 /**
  * Корпоративный поисковик для локальной сети
  * JavaScript логика поиска
- * Версия: 1.0.2
+ * Версия: 1.0.3
  */
 
 // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
@@ -87,6 +87,11 @@ function searchInIndex(queryObj) {
  * @returns {Object} Объект с путем и именем файла
  */
 function splitPathAndFilename(fullPath) {
+    // Если путь пустой или не строка
+    if (!fullPath || typeof fullPath !== 'string') {
+        return {path: '', filename: ''};
+    }
+    
     // Нормализуем разделители: все слеши делаем прямыми
     const normalized = fullPath.replace(/\\/g, '/');
 
@@ -152,11 +157,15 @@ function createFileResultHTML(fileData, searchWords = []) {
     if (!dirInfo) return `<div class="result-card">Ошибка каталога</div>`;
 
     const dirName = dirInfo[1];
+    const scanDirRelative = dirInfo[2]; // Имя каталога сканирования (например "политех")
 
-    // ВАЖНО: fileData.filePath уже содержит путь ОТНОСИТЕЛЬНО каталога сканирования
-    // Не нужно добавлять baseFolderName!
-    const relativeFilePath = fileData.filePath;
-    const relativeFolderPath = pathParts.path || '';
+    // Формируем относительный путь от директории search.html
+    const relativeFolderPath = pathParts.path ? 
+        `${scanDirRelative}/${pathParts.path}` : scanDirRelative;
+    
+    const relativeFilePath = pathParts.path ? 
+        `${scanDirRelative}/${pathParts.path}/${pathParts.filename}` : 
+        `${scanDirRelative}/${pathParts.filename}`;
 
     // Подсвечиваем слова
     const highlightedPath = highlightSearchWords(pathParts.path, searchWords);
@@ -302,67 +311,6 @@ function performSearch() {
     
     // Отображаем результаты
     displaySearchResults(results, query);
-}
-
-/**
- * Открывает папку с файлом
- * @param {string} dirId - ID каталога
- * @param {string} relativePath - Относительный путь к папке
- */
-function openFolder(dirId, relativePath) {
-    const dirInfo = window.scanDirs[dirId];
-    if (!dirInfo) return;
-    
-    const dirPath = dirInfo[2]; // Полный путь к каталогу сканирования
-    
-    // Строим полный путь
-    let fullPath;
-    if (relativePath) {
-        fullPath = dirPath + '/' + relativePath;
-    } else {
-        fullPath = dirPath;
-    }
-    
-    // Нормализуем путь для file:// URL
-    fullPath = normalizePathForFileURL(fullPath);
-    
-    console.log('Открытие папки:', fullPath);
-    
-    // Показываем путь и даем возможность скопировать
-    alert(`Путь к папке:\n${fullPath}\n\nСкопируйте этот путь в проводник.`);
-    
-    // Пытаемся открыть через file:// (работает не во всех браузерах)
-    try {
-        window.open(`file:///${fullPath}`);
-    } catch (error) {
-        console.log('Браузер не разрешил открыть file:// URL');
-    }
-}
-
-/**
- * Открывает файл
- * @param {string} dirId - ID каталога
- * @param {string} relativePath - Относительный путь к файлу
- */
-function openFile(dirId, relativePath) {
-    const dirInfo = window.scanDirs[dirId];
-    if (!dirInfo) return;
-    
-    const dirPath = dirInfo[2]; // Полный путь к каталогу сканирования
-    const fullPath = dirPath + '/' + relativePath;
-    const normalizedPath = normalizePathForFileURL(fullPath);
-    
-    console.log('Открытие файла:', normalizedPath);
-    
-    // Показываем путь и даем возможность скопировать
-    alert(`Путь к файлу:\n${normalizedPath}\n\nСкопируйте этот путь.`);
-    
-    // Пытаемся открыть через file:// (работает не во всех браузерах)
-    try {
-        window.open(`file:///${normalizedPath}`);
-    } catch (error) {
-        console.log('Браузер не разрешил открыть file:// URL');
-    }
 }
 
 /**
