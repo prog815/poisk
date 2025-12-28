@@ -13,6 +13,29 @@ import configparser
 from datetime import datetime
 from pathlib import Path
 
+
+def convert_to_relative_paths(scan_dirs_data, output_path):
+    """
+    Преобразует абсолютные пути в scan_dirs_data в относительные
+    относительно директории output_path
+    """
+    output_dir = os.path.dirname(output_path)
+    relative_dirs = []
+    
+    for dir_id, dir_name, abs_path in scan_dirs_data:
+        try:
+            # Вычисляем относительный путь от output_dir к каталогу сканирования
+            rel_path = os.path.relpath(abs_path, output_dir)
+            # Для HTML заменяем обратные слеши на прямые
+            rel_path = rel_path.replace('\\', '/')
+            relative_dirs.append([dir_id, dir_name, rel_path])
+        except ValueError as e:
+            print(f"⚠️  Не удалось вычислить относительный путь для {abs_path}: {e}")
+            # Если не получается, оставляем абсолютный
+            relative_dirs.append([dir_id, dir_name, abs_path])
+    
+    return relative_dirs
+
 # ===== ФУНКЦИИ ИНДЕКСАЦИИ =====
 
 def should_index_file(filename, extensions):
@@ -72,10 +95,11 @@ def scan_directory(directory_path, file_extensions, max_files, current_count):
     
     return files_found
 
-def build_file_index(scan_directories, file_extensions, max_files):
+def build_file_index(scan_directories, file_extensions, max_files, output_path=None):
     """
     Строит индекс файлов для всех каталогов сканирования
     Возвращает пути ОТНОСИТЕЛЬНО каждого каталога сканирования
+    output_path: если указан, пути в scanDirs будут относительными к output_path
     """
     print("📁 Начинаем построение индекса файлов...")
     
@@ -93,19 +117,56 @@ def build_file_index(scan_directories, file_extensions, max_files):
             print(f"❌ Указанный путь не является каталогом: {dir_path}")
             continue
         
-        scan_dirs_data.append([dir_id, dir_name, dir_path])
+        # ===== ИСПРАВЛЕННЫЙ БЛОК: относительные пути от output_path =====
+        if output_path:
+            try:
+                # Ключевое исправление: вычисляем относительно директории output_path
+                # НЕ относительно текущей директории скрипта!
+                
+                # Получаем абсолютный путь к директории output
+                if os.path.isabs(output_path):
+                    output_dir = os.path.dirname(output_path)
+                else:
+                    # Если путь относительный, делаем его относительно текущей директории
+                    output_dir = os.path.dirname(os.path.abspath(output_path))
+                
+                print(f"  • Директория search.html: {output_dir}")
+                
+                # Получаем абсолютный путь к каталогу сканирования
+                abs_scan_dir = os.path.abspath(dir_path)
+                print(f"  • Каталог сканирования: {abs_scan_dir}")
+                
+                # Вычисляем относительный путь ОТ output_dir К abs_scan_dir
+                rel_path = os.path.relpath(abs_scan_dir, output_dir)
+                
+                print(f"  • Вычисляю: os.path.relpath({abs_scan_dir}, {output_dir})")
+                print(f"  • Результат: {rel_path}")
+                
+                rel_path = rel_path.replace('\\', '/')
+                scan_dirs_data.append([dir_id, dir_name, rel_path])
+                
+            except Exception as e:
+                print(f"⚠️  Ошибка относительного пути для {dir_path}: {e}")
+                print(f"   • Тип ошибки: {type(e).__name__}")
+                # В случае ошибки используем короткое имя каталога
+                scan_dirs_data.append([dir_id, dir_name, dir_name])
+        else:
+            scan_dirs_data.append([dir_id, dir_name, dir_path])
+        # ===== КОНЕЦ ИСПРАВЛЕННОГО БЛОКА =====
         
+        # Сканируем файлы в каталоге
         files_in_dir = scan_directory(
             dir_path, 
             file_extensions, 
             max_files, 
-            total_files_scanned  # <-- убрали output_dir
+            total_files_scanned
         )
         
+        # Добавляем файлы в индекс
         for file_path in files_in_dir:
             file_index_data.append([dir_id, file_path])
         
-        print(f"  Найдено файлов в каталоге: {len(files_in_dir)}")
+        print(f"  • Найдено файлов в каталоге: {len(files_in_dir)}")
         
         if max_files > 0 and total_files_scanned[0] >= max_files:
             print(f"\n⚠️  Достигнут общий лимит в {max_files} файлов.")
@@ -440,12 +501,29 @@ def main():
         print(f"\n❌ Ошибка: {e}")
         return 1
     
+    # В функции main() перед build_file_index
+    print(f"\n🔍 Отладка путей:")
+    print(f"   • output_path из конфига: {config_data['output_path']}")
+    print(f"   • Текущая директория: {os.getcwd()}")
+    print(f"   • Абсолютный output_path: {os.path.abspath(config_data['output_path'])}")
+    
     # Строим индекс файлов (пути относительно каталогов сканирования)
     scan_dirs_data, file_index_data, stats = build_file_index(
         config_data['scan_directories'], 
         config_data['file_extensions'], 
-        config_data['max_files']
+        config_data['max_files'],
+        output_path=config_data['output_path']
     )
+    
+    # # ПРЕОБРАЗОВАНИЕ ПУТЕЙ В ОТНОСИТЕЛЬНЫЕ
+    # print(f"\n🔄 Преобразование путей в относительные...")
+    # scan_dirs_data = convert_to_relative_paths(
+    #     scan_dirs_data, 
+    #     config_data['output_path']
+    # )
+    
+    # Проверка после преобразования
+    print(f"   • Пример относительного пути: {scan_dirs_data[0][2]}")
     
     # Проверяем, что есть что индексировать
     if not scan_dirs_data:
