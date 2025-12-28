@@ -1,10 +1,12 @@
 """
 Корпоративный поисковик для локальной сети
-Версия: 1.0.2
+Версия: 1.0.3
 
 Главный скрипт для генерации поисковой страницы.
 Запускается администратором для обновления индекса файлов.
 """
+
+VERSION = "1.0.3"
 
 import os
 import sys
@@ -268,7 +270,7 @@ def generate_html_page(output_path, scan_dirs_data, file_index_data, stats,
         
         # Подготавливаем данные для JavaScript
         system_info = {
-            'version': '1.0.0',
+            'version': VERSION,
             'lastUpdated': datetime.now().strftime('%Y-%m-%d %H:%M'),
             'totalFiles': len(file_index_data),
             'directories': len(scan_dirs_data),
